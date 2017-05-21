@@ -19,6 +19,11 @@ insertBoard _ _ _ [] = []
 insertBoard x y value (h:t) = if h == (x,y,Empty) || h == (x,y,Black) || h == (x,y,White)
 	then (x,y,value):t
 	else [h] ++ (insertBoard x y value t)
+
+emptyFieldsOfBoard [] = []
+emptyFieldsOfBoard ((x,y,val):t) = if val == Empty
+	then [(x,y,val)] ++ emptyFieldsOfBoard t
+	else emptyFieldsOfBoard t
 	
-data Tree a = Tree a [Tree a] | Nil deriving Show
+--data Tree a = Tree a [Tree a] | Nil deriving Show
 
