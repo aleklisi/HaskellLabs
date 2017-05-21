@@ -39,11 +39,11 @@ logicList4 = [False,False,False]
 
 mySum = foldl (+) 0
 myProduct = foldl (*) 1
---myReverse = foldlr(:) []
+myReverse = foldl (flip (:)) []
 myAnd = foldl (&&) True
 myOr = foldl (||) False
---myHead = foldl (head) [a]
---myTail = foldr (delete _) [a]
+myHead = foldr (\a b->a) undefined
+myLast = foldl (\a b->b) undefined
 
 --testy
 
@@ -51,7 +51,7 @@ testSum = mySum veryBigList
 
 testProduct = myProduct veryBigList
 
---testReverse = myReverse veryBigList
+testReverse = myReverse veryBigList
 
 testAnd1 = myAnd logicList1
 testAnd2 = myAnd logicList2
@@ -63,6 +63,6 @@ testOr2 = myOr logicList2
 testOr3 = myOr logicList3
 testOr4 = myOr logicList4
 
---testHead = myHead veryBigList
+testHead = myHead veryBigList
 
---testTail = myTail veryBigList
+testLast = myLast veryBigList
