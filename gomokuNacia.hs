@@ -51,14 +51,14 @@ insertList ((Field field x y):t) color col row  = if x == col && y == row
 	then (Field color x y):t
 	else [(Field field x y)] ++ insertList t color col row
 	
-data Tree = Nil | Leaf (Board , Int) | Branch (Board, Int) [(Tree)]
+data Tree = Nil | Leaf (Board , Int, Int) | Branch (Board, Int, Int) [(Tree)]
 
 instance Show Tree where
 	show Nil = "?"
-	show (Leaf (Board myBoard, priority)) = showBoard (Board myBoard) ++ "\n priority: \n" ++ show priority ++ "\n"
-	show (Branch (Board myBoard, priority) (h:t)) = showBoard (Board myBoard) ++ "\n priority: \n" ++ show priority ++ "\n" ++ show h ++ show t
+	show (Leaf (Board myBoard, priority, height)) = showBoard (Board myBoard) ++ "\n priority: \n" ++ show priority ++ "\n"
+	show (Branch (Board myBoard, priority, height) (h:t)) = showBoard (Board myBoard) ++ "\n priority: \n" ++ show priority ++ "\n" ++ show h ++ show t
 	
-testTree = Branch (initializeBoard 3, 10) [(Leaf(initializeBoard 2, 20)), Nil]
+testTree = Branch (initializeBoard 3, 10, 1) [(Leaf(initializeBoard 2, 20, 2)), Nil]
 
 getEmptyFieldsOfBoard (Board []) = []
 getEmptyFieldsOfBoard (Board ((Field field x y):t)) =
@@ -69,14 +69,24 @@ getEmptyFieldsOfBoard (Board ((Field field x y):t)) =
 
 --nextMoveBoard (Board l) color =  (insertBoard (Board l) color x y) | (x,y) <- getEmptyFieldsOfBoard (Board l)
 
-buildGameTree 0 (Board l) field = Leaf ((Board l), 0)
-buildGameTree height (Board l) field = Branch ((Board l), height) [buildGameTree (height - 1) (insertBoard (Board l) (changePlayer field) x y ) (changePlayer field) | (x,y) <- getEmptyFieldsOfBoard (Board l)]
+buildGameTree 0 (Board l) field = Leaf ((Board l), 0, 0)
+buildGameTree height (Board l) field = Branch ((Board l), 0, height) [buildGameTree (height - 1) (insertBoard (Board l) (changePlayer field) x y ) (changePlayer field) | (x,y) <- getEmptyFieldsOfBoard (Board l)]
 
 changePlayer color =
 	case color of 
 	Empty -> Empty
 	White -> Black
 	Black -> White
+
+--buildStrategy 0 (Board l) field = Leaf ((Board l), 0, 0)
+--buildStrategy height (Board l) field =  Branch ((Board l), 0, height) [buildStrategy (height - 1) (insertBoard (Board l) (changePlayer field) x y) (changePlayer field) | (x,y,0) <- getBestChose (Board l) field]
+
+--getBestChose (Board []) _ = []
+--getBestChose (Board ((Field field x y):t)) currentColor = 
+--	if field == Empty then getBestChose t currentColor
+--	else if (x == 7 && y == 7) then [(x,y,15)]
+--	else if (x > 4 && x < 12 && y > 4 && y < 12 ) then [(x,y,10)]
+--	else [(x,y,1)]
 
 getElement (Board []) _ _ = error "Empty board or index out of range"
 getElement (Board ((Field field x y):t)) row col = if (x == row && y == col)
@@ -105,7 +115,21 @@ getSlant (Board ((Field field x y):t)) col row = if y == col && x == row
 
 --isWinner (Board ((Field field x y):t)) = 
 
-data Pattern = Pattern {tab::[Color]} deriving (Eq)
+data Pattern color = Pattern {tab::[color]} deriving (Eq, Show)
+
+pattern1 color = Pattern [color, color, color, color, Empty]
+pattern2 color = Pattern [color, color, color, Empty, color]
+pattern3 color = Pattern [color, color, Empty, color, color]
+pattern4 color = Pattern [color, Empty, color, color, color]
+pattern5 color = Pattern [Empty, color, color, color, color]
+
+canWin (Board ((Field field x y):t)) color goal = 
+canWin (Board ((Field field x y):t)) color goal = 
+	if field == color then canWin t color (goal + 1)
+	else canWin t color goal
+
+ratingBoard (Board l) color = if canWin (Board l) then 
+
 
 patternHasNothing (Pattern []) = True
 patternHasNothing (Pattern (h:t)) = if h == Empty then patternHasNothing (Pattern t)
