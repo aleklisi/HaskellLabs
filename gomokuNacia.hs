@@ -26,7 +26,7 @@ testStr = "X_\n_O"
 
 stringToList [] _ _= []
 stringToList str x y = case (head str) of
-	'_' -> [(Field Empty x y)] ++ (stringToList (tail str) (x + 1) y)
+        '_' -> [(Field Empty x y)] ++ (stringToList (tail str) (x + 1) y)
 	'X' -> [(Field Black x y)] ++ (stringToList (tail str) (x + 1) y)
 	'O' -> [(Field White x y)] ++ (stringToList (tail str) (x + 1) y)
 	'\n' -> (stringToList (tail str) 0 (y + 1))
@@ -103,10 +103,10 @@ getRow (Board ((Field field x y):t)) col = if y == col && x < 19
 	then [field] ++ getRow (Board t) col 
 	else getRow (Board t) col 
 	
-getSlant (Board []) _ _= []
-getSlant (Board ((Field field x y):t)) col row = if y == col && x == row
-	then [field] ++ getSlant (Board t) (col+1) (row+1) 
-	else getSlant (Board t) (col+1) (row+1) 
+getSlant (Board []) _ = []
+getSlant (Board ((Field field x y):t)) col = if x == col && y == x
+	then [field] ++ getSlant (Board t) (col+1)
+	else getSlant (Board t) (col)
 	
 --fiveInRow (Board ((Field field x y):t)) (Color color) = 
 --if field == color then
@@ -123,12 +123,12 @@ pattern3 color = Pattern [color, color, Empty, color, color]
 pattern4 color = Pattern [color, Empty, color, color, color]
 pattern5 color = Pattern [Empty, color, color, color, color]
 
-canWin (Board ((Field field x y):t)) color goal = 
-canWin (Board ((Field field x y):t)) color goal = 
-	if field == color then canWin t color (goal + 1)
-	else canWin t color goal
+--canWin (Board ((Field field x y):t)) color goal = 
+--canWin (Board ((Field field x y):t)) color goal = 
+--	if field == color then canWin t color (goal + 1)
+--	else canWin t color goal
 
-ratingBoard (Board l) color = if canWin (Board l) then 
+--ratingBoard (Board l) color = if canWin (Board l) then 
 
 
 patternHasNothing (Pattern []) = True
@@ -146,3 +146,50 @@ findPatternHorizontal (Board ((Field field x y):t)) (Pattern pattern) =
 
 -- inspectBoard (Board ((Field field x y):t)) = 
 -- generateTree (Board l) field = 
+main = do
+        putStrLn "Podaj imie: "
+        name <- getLine
+        let msg = "Witaj " ++ name ++ "!"
+        putStrLn msg
+        return 0
+
+--genPos::Int->[Int]
+--genPos x = 
+--       x2 <- getEmptyField x
+--        v <- isInTheBoard x2
+--        return v
+
+data Box a = Box a | Empty1
+
+data Box2 x a  = Box2 x a | Empty2
+
+{--class Functor m where
+      --  fmap::(a->b)-> m a -> m b
+
+class Applicative m where
+        pure :: a -> m a
+        <*> :: m (a->b) -> m a -> m b
+--}
+instance Functor Box where
+        fmap f (Empty1) = Empty1
+        fmap f (Box a) = Just f a
+
+instance Functor Box2 where
+        fmap f (Empty2) = Empty2
+        fmap f (Box2 x a) =  Just [f x] ++ [f a]        
+
+instance Applicative Box where
+        pure Empty1 = Nothing
+        pure (Box a) = Just a
+        
+        f <*> Empty1 = Nothing
+        f <*> (Box a) = Just f a
+
+instance Monad Box where
+        -- (>>=)::m a -> (a -> m b) -> m b
+        -- return :: a -> m a
+        Just (Box a) >>= f = f a
+        Empty1 >>= _ = Nothing
+
+        return (Box a) = Just (Box a)
+        return Empty1 = Nothing
