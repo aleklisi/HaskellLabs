@@ -34,7 +34,6 @@ stringToList str x y = case (head str) of
 	'X' -> [(Field Black x y)] ++ (stringToList (tail str) (x + 1) y)
 	'O' -> [(Field White x y)] ++ (stringToList (tail str) (x + 1) y)
 	'\n' -> (stringToList (tail str) 0 (y + 1))
-
 stringToBoard str = Board (stringToList str 0 0)
 --}
 
@@ -71,13 +70,28 @@ getEmptyFieldsOfBoard (Board ((Field field x y):t)) =
 	if field == Empty then [(x,y)] ++ getEmptyFieldsOfBoard (Board t)
 	else getEmptyFieldsOfBoard (Board t)
 
-generateFirstMove (Board l) color 16 16 = error "Out of range"
-generateFirstMove (Board l) color row col = if getElement (Board l) row col == Empty then insertBoard (Board l) color col row
+generateFirstMove (Board l) color 16 16 = (0, 0)
+generateFirstMove (Board l) color row col = if getElement (Board l) row col == Empty then (col, row)
                                             else generateFirstMove (Board l) color (row+1) (col+1)
 
-buildGameTree :: Int -> Board -> Color -> Tree
-buildGameTree 0 (Board l) field = Leaf ((Board l), 0)
-buildGameTree height (Board l) field = Branch ((Board l), height) [buildGameTree (height-1) (insertBoard (Board l) (changePlayer field) x y ) (changePlayer field) | (x,y) <- getEmptyFieldsOfBoard (Board l)]
+rateMove (Board []) color _ _ = 0
+rateMove (Board t) color x y = 
+	if checkFive (Board t) x y color 0 then 5
+	else if checkFive (Board t) x y (changePlayer color) 0 then -5
+	else if checkFive (Board t) x y color 1 then 4
+	else if checkFive (Board t) x y color 2 then 3
+	else if checkFive (Board t) x y color 3 then 2
+	else if checkFive (Board t) x y color 4 then 1
+	else length (getNeighbour (getNeighbourList (Board t) color x y))
+
+
+buildGameTree2 :: Int -> Int -> Board -> Color -> Tree
+buildGameTree2 0 priority (Board l) field = Leaf ((Board l), (priority))
+buildGameTree2 counter priority (Board l) field = Branch ((Board l), (priority)) [buildGameTree2 (counter - 1) (rateMove (Board l) field x y) (insertBoard (Board l) (changePlayer field) x y ) (changePlayer field) | (x,y) <- getNeighbour (getNeighbpourList (Board l) field x2 y2) | (x2 y2) <- getEmptyFieldsOfBoard (Board l)]
+
+--buildGameTree :: Int -> Board -> Color -> Tree
+--buildGameTree 0 (Board l) field = Leaf ((Board l), 0)
+--buildGameTree height (Board l) field = Branch ((Board l), height) [buildGameTree (height-1) (insertBoard (Board l) (changePlayer field) x y ) (changePlayer field) | (x,y) <- getEmptyFieldsOfBoard (Board l)]
 
 
 --rateBoard (Board l) field x y 0
@@ -91,6 +105,15 @@ sumFromTree [] = 0
 sumFromTree (Leaf (_, h):t) = h + sumFromTree t
 sumFromTree ((Branch (_, h) []) : t) = h + sumFromTree t
 sumFromTree ((Branch(_,h) list) : t) = h + sumFromTree t + sumFromTree list
+
+--getMax [] = 0
+--getMax (Leaf (_, h):t) = sumFromTree (Leaf (_, h):t)
+--getMax ((Branch (_, h) []) : t) = getMax sumFromTree ((Branch (_, h) []) : t)
+--getMax ((Branch(_,h) list) : t) = max sumFromTree 
+
+getBoardFromTree :: Tree -> Board
+getBoardFromTree (Leaf ((Board l), _)) = (Board l)
+getBoardFromTree (Branch ((Board l), _) _ ) = (Board l)
 
 getNeighbour :: (Eq t, Eq t1, Num t, Num t1) => [(t, t1)] -> [(t, t1)]
 getNeighbour [] = []
@@ -123,15 +146,16 @@ changePlayer color =
 	Black -> White
 
 {--
-getMoveComputer :: Board -> Int -> Color -> [(Int,Int)] -> Board
-getMoveComputer (Board l) 5 color _ = generateFirstMove (Board l) color 5 5 
-getMoveComputer (Board l) counter color [(x,y)] = 
-    if checkFive (Board l) x y color counter then insertBoard (Board l) color x y 
-    else getMoveComputer (Board l) 5 color []
+getMoveComputer :: Board -> Int -> Color -> [(Int,Int)]
+getMoveComputer (Board l) 5 color _ = generateFirstMove (Board l) color 6 6
+getMoveComputer (Board l) counter color (x,y) = 
+    if checkFive (Board l) x y color counter then (x,y)
+    else getMoveComputer (Board l) (counter+1) color (x,y)
 getMoveComputer (Board l) counter color ((x,y):xs) = 
-    if checkFive (Board l) x y color counter then insertBoard (Board l) color x y 
-    else getMoveComputer (Board l) (counter + 1) color xs
+    if checkFive (Board l) x y color counter then (x,y)
+    else getMoveComputer (Board l) (counter) color xs
 --buildStrategy 0 (Board l) field = Leaf ((Board l), 0, 0)
+--}
 --buildStrategy height (Board l) field =  Branch ((Board l), 0, height) [buildStrategy (height - 1) (insertBoard (Board l) (changePlayer field) x y) (changePlayer field) | (x,y,0) <- getBestChose (Board l) field]
 --}
 
