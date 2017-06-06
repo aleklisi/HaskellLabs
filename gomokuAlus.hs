@@ -173,13 +173,6 @@ findmyHope pat lines =  if (listInList pat (head lines))
 
 fp = findmyHope (myHope 2 White) (getAllLinesOfBoard testBoard 3)
 
-
---markLeafs :: [Tree] -> [Tree]
---markLeafs [] = []
---markLeafs ((Leaf _ val):t) = ((Leaf _ val):t)
---markLeafs ((Brunch _ val []):t) = val + (sumSubtrees t)
---markLeafs ((Brunch _ val l):t) = val + (sumSubtrees l) + (sumSubtrees t)
-
 markLeafs [] = []
 markLeafs ((Leaf (Board l) _):t) = [(Leaf (Board l) (finalBoardMark (Board l)))] ++ (markLeafs t)
 markLeafs ((Brunch (Board l) _ []):t) = [Brunch (Board l) (finalBoardMark (Board l)) []] ++ (markLeafs t)
@@ -207,11 +200,11 @@ instance Ord Tree where
     (Brunch _ vl1 _) `compare` (Leaf _ vl2) = vl2 `compare` vl1
     (Brunch _ vl1 _) `compare` (Brunch _ vl2 _) = vl2 `compare` vl1
     
-
 problem = treeLevel ( markBruches ( markLeafs [buildGameTree 2 testBoard White]))
 
-treeLevel ((Brunch (Board l) val li):t) = (getBoardFromTree (maximum li), val)
+getNextBoardWithBestMove (Board l) treeDepth color = fst ( treeLevel ( markBruches ( markLeafs [buildGameTree treeDepth (Board l) color])))
 
+treeLevel ((Brunch (Board l) val li):t) = (getBoardFromTree (maximum li), val)
 
 getMarkAndBoard ((Leaf (Board l) val):t) = [((Board l),val)] ++ (getMarkAndBoard t)
 getMarkAndBoard ((Brunch (Board l) val _):t) = [((Board l),val)] ++ (getMarkAndBoard t)
@@ -219,8 +212,80 @@ getMarkAndBoard [] = []
 
 treeLevel2 ((Brunch (Board l) val li):t) = li
 
+canInsertToBoard (Board l) x y = canInsertToList l x y
+
+canInsertToList [] _ _ = False
+canInsertToList ((x,y,f):t) cx cy = if x == cx && y == cy && f == Empty
+        then True
+        else canInsertToList t cx cy
+
+ifWinner (Board l) color = if findmyHope (myHope 15 color) (getAllLinesOfBoard (Board l) (getBoardSize (Board l))) > 0
+        then True
+        else False
+
+        
+{--        
+startGameWithPlayer = pvp (emptyBoard 19) Black
 
 
+pvp (Board l) color =
+	
+        do
+        show (Board l)		
+		putStr "Write x:"
+        line <- getLine
+        let x :: Int
+                x = read line
+        putStrLn "Write y:"
+        line <- getLine
+        let y :: Int
+                y = read line
+        if canInsertToBoard (Board l) x y 
+                then do
+                        let newBoard = (insertBoard x y color (Board l))
+                        if ifWinner newBoard color
+                                then return (color + "wins the game")
+                                else pvp newBoard (opositFiled color)
+                else do
+                        putStr "worng move play again"
+                        pvp (Board l) color
+-}
+
+{-
+
+startGameWithComputerPlayingWhite = pvp (emptyBoard 19) Black White
+startGameWithComputerPlayingBlack = pvp (emptyBoard 19) Black Black
+
+pvc (Board l) currentColor computerColor = 
+		do
+		show (Board l)
+        if currentColor == computerColor 
+        then do
+                let newBoard = (getNextBoardWithBestMove 2 (Board l) currentColor)
+                if ifWinner newBoard currentColor
+                        then return (currentColor + "wins the game")
+                        else pvc newBoard (opositFiled currentColor) computerColor 
+        else
+                do putStr "Write x:"
+                        line <- getLine
+                        let x :: Int
+                                x = read line
+                        putStrLn "Write y:"
+                        line <- getLine
+                        let y :: Int
+                                y = read line
+                        if canInsertToBoard (Board l) x y 
+                                then do
+                                        let newBoard = (insertBoard x y color (Board l))
+                                        if ifWinner newBoard color
+                                                then return (color + "wins the game")
+                                                else pvc newBoard (opositFiled color) computerColor
+                                else do
+                                        putStr "worng move play again"
+                                        pvp (Board l) color computerColor
+                
+
+-}
 
 --getBoardFromBrunch (Brunch (Board l) _ _) = Board l
 --getBoardFromBrunch (Leaf (Board l) _) = Board l
