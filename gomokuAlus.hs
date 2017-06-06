@@ -14,7 +14,7 @@ opositFiled White = Black
 --inicjalizacja pustej planszy size x size
 emptyBoard size = Board [(x,y,Empty) | y <- [1..size], x <- [1..size]]
 
---typ danych dla caÅ‚ej planszy 
+--typ danych dla ca³ej planszy 
 data Board = Board [(Int,Int,Field)]
 
 printBoard (Board l) = printList l
@@ -53,7 +53,7 @@ insertList x y value (h:t) = if h == (x,y,Empty)
       then (x,y,value):t
       else [h] ++ (insertList x y value t)
 
---lista pozycji FieldÃ³w Empty na planszy
+--lista pozycji Fieldów Empty na planszy
 listOfEmptyFieldsOfBoard (Board l) = listOfEmptyFieldsOfList l
 
 listOfEmptyFieldsOfList [] = []
@@ -64,6 +64,9 @@ listOfEmptyFieldsOfList ((x,y,val):t) = if val == Empty
 possobleNextBoards (Board l) value = [insertBoard x y value (Board l) | (x,y) <- listOfEmptyFieldsOfList l] 
       
 data Tree = Leaf Board Int | Brunch Board Int [Tree] deriving (Show)
+
+getBoardFromTree (Leaf b _) = b
+getBoardFromTree (Brunch b _ _) = b
 
 buildGameTree 0 (Board l) field = Leaf (Board l) 0
 buildGameTree height (Board l) field = Brunch (Board l) height [buildGameTree (height - 1) (insertBoard x y (opositFiled field) (Board l)) (opositFiled field) | (x,y) <- listOfEmptyFieldsOfList l]
@@ -184,38 +187,53 @@ markLeafs ((Brunch (Board l) _ li):t) = [Brunch (Board l) 0 (markLeafs li)] ++ (
        
 sumBruches [] = 0
 sumBruches ((Leaf (Board l) val):t) = val
-sumBruches ((Brunch (Board l) val []):t) = val + (sumBruches t)  
-sumBruches ((Brunch (Board l) val li):t) = val + (sumBruches t) + (sumBruches li)
+sumBruches ((Brunch (Board l) val []):t) = (sumBruches t)  
+sumBruches ((Brunch (Board l) val li):t) = (sumBruches t) + (sumBruches li)
 
 markBruches [] = [] 
-markBruches ((Leaf (Board l) val):t) = [(Leaf (Board l) val)] ++ (markBruches t)
-markBruches ((Brunch (Board l) val []):t) = [(Brunch (Board l) val [])] ++ (markBruches t)
-markBruches ((Brunch (Board l) val li):t) = [(Brunch (Board l) (sumBruches li) li)] ++ (markBruches t) 
+markBruches ((Leaf (Board l) val):t) = (Leaf (Board l) val) : (markBruches t)
+markBruches ((Brunch (Board l) val []):t) = (Brunch (Board l) val []) : (markBruches t)
+markBruches ((Brunch (Board l) val li):t) = (Brunch (Board l) (sumBruches li) (markBruches li)) : (markBruches t) 
 
 instance Eq Tree where
-	(Leaf _ vl1) == (Leaf _ vl2) = vl1 == vl2
-	(Leaf _ vl1) == (Brunch _ vl2 _) = vl1 == vl2
-	(Brunch _ vl1 _) == (Leaf _ vl2) = vl1 == vl2
-	(Brunch _ vl1 _) == (Brunch _ vl2 _) = vl1 == vl2
+    (Leaf _ vl1) == (Leaf _ vl2) = vl1 == vl2
+    (Leaf _ vl1) == (Brunch _ vl2 _) = vl1 == vl2
+    (Brunch _ vl1 _) == (Leaf _ vl2) = vl1 == vl2
+    (Brunch _ vl1 _) == (Brunch _ vl2 _) = vl1 == vl2
 
 instance Ord Tree where
-	(Leaf _ vl1) `compare` (Leaf _ vl2) = vl1 `compare` vl2
-	(Leaf _ vl1) `compare` (Brunch _ vl2 _) = vl1 `compare` vl2
-	(Brunch _ vl1 _) `compare` (Leaf _ vl2) = vl1 `compare` vl2
-	(Brunch _ vl1 _) `compare` (Brunch _ vl2 _) = vl1 `compare` vl2
-	
+    (Leaf _ vl1) `compare` (Leaf _ vl2) = vl2 `compare` vl1
+    (Leaf _ vl1) `compare` (Brunch _ vl2 _) = vl2 `compare` vl1
+    (Brunch _ vl1 _) `compare` (Leaf _ vl2) = vl2 `compare` vl1
+    (Brunch _ vl1 _) `compare` (Brunch _ vl2 _) = vl2 `compare` vl1
+    
+
+problem = treeLevel ( markBruches ( markLeafs [buildGameTree 2 testBoard White]))
+
+treeLevel ((Brunch (Board l) val li):t) = (getBoardFromTree (maximum li), val)
+
+
+getMarkAndBoard ((Leaf (Board l) val):t) = [((Board l),val)] ++ (getMarkAndBoard t)
+getMarkAndBoard ((Brunch (Board l) val _):t) = [((Board l),val)] ++ (getMarkAndBoard t)
+getMarkAndBoard [] = []
+
+treeLevel2 ((Brunch (Board l) val li):t) = li
+
+
+
+
 --getBoardFromBrunch (Brunch (Board l) _ _) = Board l
 --getBoardFromBrunch (Leaf (Board l) _) = Board l
 
 --getListOfSubBrunches (Brunch _ _ li) = li
-	
+    
 --getBestBrunch [] = error "cant find best brunch"
 --getBestBrunch list = getBoardFromBrunch (maximum ( getListOfSubBrunches (head list)))
 
 --getNextBestMove (Board l) color = do
---		tree1 <- buildGameTree 1 (Board l) color
---		tree2 <- markLeafs tree1
---		tree3 <- markBruches tree2 
+--        tree1 <- buildGameTree 1 (Board l) color
+--        tree2 <- markLeafs tree1
+--        tree3 <- markBruches tree2 
 
 areEqualForLists [] [] = True
 areEqualForLists [] _ = False
