@@ -1,49 +1,71 @@
-data List a = EmptyList | ListElement {element :: a, next :: List a} deriving Show
+data Lista a = EmptyLista | ListaElement {element :: a, next :: Lista a} deriving Show
 
 	
-egzampleList = ListElement 5 (ListElement 4 (ListElement 3 EmptyList))
-egzampleList2 = ListElement 'a' (ListElement 'b' (ListElement 'c' EmptyList))
-egzampleList3 = ListElement 2 (ListElement 1 (ListElement 0 EmptyList))
+egzampleLista = ListaElement 5 (ListaElement 4 (ListaElement 3 EmptyLista))
+egzampleLista2 = ListaElement 'a' (ListaElement 'b' (ListaElement 'c' EmptyLista))
+egzampleLista3 = ListaElement 2 (ListaElement 1 (ListaElement 0 EmptyLista))
 
 
-myMap EmptyList f = EmptyList
-myMap (ListElement thisElem next) f = ListElement (f thisElem) (myMap next f) 
+myMap EmptyLista f = EmptyLista
+myMap (ListaElement thisElem next) f = ListaElement (f thisElem) (myMap next f) 
 
-testMyMap = myMap egzampleList (+10)
+testMyMap = myMap egzampleLista (+10)
 
-myFoldr EmptyList f neutralElementOfF = neutralElementOfF
-myFoldr (ListElement thisElem next) f neutralElementOfF = f thisElem (myFoldr next f neutralElementOfF)
+myFoldr EmptyLista f neutralElementOfF = neutralElementOfF
+myFoldr (ListaElement thisElem next) f neutralElementOfF = f thisElem (myFoldr next f neutralElementOfF)
 
-myFoldl EmptyList f neutralElementOfF = neutralElementOfF
-myFoldl (ListElement thisElem next) f neutralElementOfF = myFoldl next f (f neutralElementOfF thisElem)
+myFoldl EmptyLista f neutralElementOfF = neutralElementOfF
+myFoldl (ListaElement thisElem next) f neutralElementOfF = myFoldl next f (f neutralElementOfF thisElem)
 
-testMyDFoldl 1 = myFoldl egzampleList (+) 0
-testMyDFoldl 2 = myFoldl egzampleList (*) 1
-testMyDFoldr 1 = myFoldr egzampleList (+) 0
-testMyDFoldr 2 = myFoldr egzampleList (*) 1  
+testMyDFoldl 1 = myFoldl egzampleLista (+) 0
+testMyDFoldl 2 = myFoldl egzampleLista (*) 1
+testMyDFoldr 1 = myFoldr egzampleLista (+) 0
+testMyDFoldr 2 = myFoldr egzampleLista (*) 1  
 
-myZipWith EmptyList EmptyList = EmptyList
-myZipWith EmptyList _ = error "list are of diffrent length"
-myZipWith _ EmptyList = error "list are of diffrent length"
-myZipWith (ListElement a next) (ListElement b next2) = ListElement (a,b) (myZipWith next next2)
+myZipWith EmptyLista EmptyLista = EmptyLista
+myZipWith EmptyLista _ = error "Lista are of diffrent length"
+myZipWith _ EmptyLista = error "Lista are of diffrent length"
+myZipWith (ListaElement a next) (ListaElement b next2) = ListaElement (a,b) (myZipWith next next2)
 
-testMyZipWith = myZipWith egzampleList egzampleList2
+testMyZipWith = myZipWith egzampleLista egzampleLista2
 
-myConcat EmptyList EmptyList = EmptyList
-myConcat EmptyList a = a
-myConcat a EmptyList = a
-myConcat (ListElement a nexta) (ListElement b nextb) = ListElement a (myConcat nexta (ListElement b nextb))
+myConcat EmptyLista EmptyLista = EmptyLista
+myConcat EmptyLista a = a
+myConcat a EmptyLista = a
+myConcat (ListaElement a nexta) (ListaElement b nextb) = ListaElement a (myConcat nexta (ListaElement b nextb))
 
-testMyConcat = myConcat egzampleList egzampleList3
+testMyConcat = myConcat egzampleLista egzampleLista3
 
-fromNormalList [] = EmptyList
-fromNormalList (h:t) = ListElement h (fromNormalList t)
+fromNormalLista [] = EmptyLista
+fromNormalLista (h:t) = ListaElement h (fromNormalLista t)
 
-testFromNormalList = fromNormalList [1..5]
-testFromNormalList2 = fromNormalList []
+testFromNormalLista = fromNormalLista [1..5]
+testFromNormalLista2 = fromNormalLista []
 
-toNormalList EmptyList = []
-toNormalList (ListElement a next) = a : (toNormalList next)
+toNormalLista EmptyLista = []
+toNormalLista (ListaElement a next) = a : (toNormalLista next)
 
-testToNormalList = toNormalList EmptyList
-testToNormalList2 = toNormalList egzampleList
+testToNormalLista = toNormalLista EmptyLista
+testToNormalLista2 = toNormalLista egzampleLista
+
+{-
+
+class Functor f where
+  fmap :: (a -> b) -> f a -> f b
+
+fmap id      = id
+fmap (p . q) = (fmap p) . (fmap q)
+patrz:
+https://en.wikibooks.org/wiki/Haskell/The_Functor_class
+
+instance Functor Lista where
+	fmap = myMap
+
+-}
+	
+{-
+instance Applicative Lista where
+    pure                  = ListaElement
+    (ListaElement f) <*> (ListaElement x) = ListaElement (f x)
+    _        <*> _        = EmptyLista
+-}
