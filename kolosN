@@ -1,0 +1,67 @@
+-- Napisz funkcje generujaca drzewo o zadanej glebokosci i rozgalezzieniu w kazdym z wezlow.
+-- Wartosc w wezle ma byc takA sama i podawana jako argument funkcji. 
+-- Zaproponuj typ dla drzewa, ktore spelni powyzsze wymagania. Napisz klase Funktor dla tego typu.
+
+data Tree a = Empty | Node a [Tree a] deriving Show
+
+buildTree :: (Num a1, Eq a1) => a1 -> a -> Tree a
+buildTree 0 a = Empty
+buildTree 1 a = Node a [Empty]
+buildTree height a = Node a [buildTree (height - 1) a]
+
+instance Functor Tree where
+	fmap _ Empty = Empty
+	fmap f (Node a [left]) = Node (f a) [fmap f left]
+-- Stworz wlasny typ implementujacy liste jednokierunkowa. Dopisz dla tego typu nastepujace funkcje:
+data List a = Null | ListElement {element :: a, next :: List a} deriving (Show, Read, Eq, Ord)  
+
+testList = ListElement 5 (ListElement 4 (ListElement 3 Null))
+testList2 = ListElement 'a' (ListElement 'b' (ListElement 'c' Null))
+testList3 = ListElement 4 (ListElement 1 (ListElement 0 Null))
+-- map
+instance Functor List where
+	fmap _ Null = Null
+	fmap f (ListElement a next) = ListElement (f a) (fmap f next)
+
+testMyMap = fmap (+10) testList 
+-- foldr (tworzy kombinacje struktury qykorzystujac funkcj podana jako argument pierwszy uzywajac argumentu drugiego jako parametru poczatkowego)
+myFoldr f neutralElement Null = neutralElement
+myFoldr f neutralElement (ListElement elem next) = f elem (myFoldr f neutralElement next)
+
+-- foldl-
+myFoldl f neutralElement Null = Null
+myFoldl f neutralElement (ListElement elem next) = myFoldl f ( f neutralElement elem) next 
+
+--test do fold
+testFoldl1 = myFoldl (+) 0 testList 
+testFoldr1 = myFoldr (+) 0 testList 
+testFoldl2 = myFoldl (*) 1 testList 
+testFoldr2 = myFoldr (*) 1 testList 
+-- zipWith 
+myZipWith Null Null = Null
+myZipWith Null _ = error "Lists are of different length"
+myZipWith _ Null = error "Lists are of different length"
+myZipWith (ListElement a next) (ListElement b next2) = ListElement (a,b) (myZipWith next next2)
+-- operator analogiczny do ++ dla zwyklej listy nazwa dowolna
+{--
+infixr 5 .++
+(.++)::List a -> List a -> List a
+Null (.++) Null = Null
+Null (.++) a = a
+a (.++) Null = a
+(ListElement a nexta) (.++) (ListElement b next2) = ListElement a (nexta (.++) (ListElement b next2))
+--}
+
+-- fromNormalList (konwersja z isty wbudowanej do zaproponowanego typu)
+fromNormalList :: [a] -> List a
+fromNormalList [] = Null
+fromNormalList (x:xs) = ListElement x (fromNormalList xs)
+
+
+-- toNormalList (konwersja z zaproponowanego typu do listy wbudowanej)
+toNormalList :: List a -> [a]
+toNormalList Null = []
+toNormalList (ListElement a next) = [a] ++ toNormalList next
+-- Napisz dla tego typu instancje klasyy Functor i Applicative
+
+--instance Applicative List where
