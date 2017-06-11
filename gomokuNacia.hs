@@ -85,13 +85,13 @@ rateMove (Board t) color x y =
 	else length (getNeighbour (getNeighbourList (Board t) color x y))
 
 
-buildGameTree2 :: Int -> Int -> Board -> Color -> Tree
-buildGameTree2 0 priority (Board l) field = Leaf ((Board l), (priority))
-buildGameTree2 counter priority (Board l) field = Branch ((Board l), (priority)) [buildGameTree2 (counter - 1) (rateMove (Board l) field x y) (insertBoard (Board l) (changePlayer field) x y ) (changePlayer field) | (x,y) <- getNeighbour (getNeighbpourList (Board l) field x2 y2) | (x2 y2) <- getEmptyFieldsOfBoard (Board l)]
+--buildGameTree2 :: Int -> Int -> Board -> Color -> Tree
+--buildGameTree2 0 priority (Board l) field = Leaf ((Board l), (priority))
+--buildGameTree2 counter priority (Board l) field = Branch ((Board l), (priority)) [buildGameTree2 (counter - 1) (rateMove (Board l) field x y) (insertBoard (Board l) (changePlayer field) x y ) (changePlayer field) | (x,y) <- getNeighbour (getNeighbpourList (Board l) field x2 y2) | (x2 y2) <- getEmptyFieldsOfBoard (Board l)]
 
---buildGameTree :: Int -> Board -> Color -> Tree
---buildGameTree 0 (Board l) field = Leaf ((Board l), 0)
---buildGameTree height (Board l) field = Branch ((Board l), height) [buildGameTree (height-1) (insertBoard (Board l) (changePlayer field) x y ) (changePlayer field) | (x,y) <- getEmptyFieldsOfBoard (Board l)]
+buildGameTree :: Int -> Board -> Color -> Tree
+buildGameTree 0 (Board l) field = Leaf ((Board l), 0)
+buildGameTree height (Board l) field = Branch ((Board l), height) [buildGameTree (height-1) (insertBoard (Board l) (changePlayer field) x y ) (changePlayer field) | (x,y) <- getEmptyFieldsOfBoard (Board l)]
 
 
 --rateBoard (Board l) field x y 0
@@ -193,19 +193,25 @@ testBoard4 = insertBoard(insertBoard(insertBoard (insertBoard (initializeBoard 1
 
 testBoard5 = insertBoard(insertBoard(insertBoard(insertBoard (insertBoard (initializeBoard 15) Black 15  1) Black 15 2)Black 15 15) Black 15 14) Black 15 10
 
+testBoard6 = insertBoard (insertBoard (insertBoard (initializeBoard 15) Black 2 2) Black 3 3) Black 5 5
+testBoard7 = insertBoard (insertBoard (insertBoard (initializeBoard 15) Black 2 2) Black 2 3) Black 2 5
+testBoard8 = insertBoard (insertBoard (insertBoard (initializeBoard 15) Black 2 2) Black 2 6) Black 2 12
+testBoard9 = insertBoard (insertBoard (initializeBoard 15) Black 2 2) Black 2 7
+
 checkFive :: Board -> Int -> Int -> Color -> Int -> Bool
 checkFive (Board x) row col color counter
-	| searchFiveInLine (getRow (Board x) row) color counter = True  
-	| searchFiveInLine (getCol (Board x) col) color counter = True 
-	| searchFiveInLine (getSlant (Board x) row) color counter = True 
+	| searchFiveInLine (getRow (Board x) row) color counter 0 = True  
+	| searchFiveInLine (getCol (Board x) col) color counter 0 = True 
+	| searchFiveInLine (getSlant (Board x) row) color counter 0 = True 
 	| otherwise = False
 
-searchFiveInLine :: (Eq a1, Num a, Ord a) => [a1] -> a1 -> a -> Bool	
-searchFiveInLine [] _ _ = False 
-searchFiveInLine (x:xs) color counter
+searchFiveInLine :: (Eq a1, Num a, Ord a) => [a1] -> a1 -> a -> a -> Bool	
+searchFiveInLine [] _ _ _ = False 
+searchFiveInLine (x:xs) color counter tmp
+	| tmp > 4 = False
 	| counter >= 5 = True
-	| x == color = searchFiveInLine xs color (counter+1)
-	| otherwise = searchFiveInLine xs color (counter-1)
+	| x == color = searchFiveInLine xs color (counter+1) tmp
+	| otherwise = searchFiveInLine xs color counter (tmp + 1)
 
 rateBoard :: Board -> Color -> Int -> Int -> Int -> Int
 rateBoard (Board m) color 16 16 _ = 0
