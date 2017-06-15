@@ -1,6 +1,3 @@
---module Five where
---import System.Random
-
 -- Eq == Equality (== or !=)
 data Color = Empty | Black | White deriving (Eq)
 
@@ -66,30 +63,15 @@ getEmptyFieldsOfBoard (Board []) = []
 getEmptyFieldsOfBoard (Board ((Field field x y):t)) =
 	if field == Empty then [(x,y)] ++ getEmptyFieldsOfBoard (Board t)
 	else getEmptyFieldsOfBoard (Board t)
-{-
-generateFirstMove (Board l) color 16 16 = (0, 0)
-generateFirstMove (Board l) color row col = if getElement (Board l) row col == Empty then (col, row)
-                                            else generateFirstMove (Board l) color (row+1) (col+1)
--}
-{-
-rateMove (Board []) color _ _ = 0
-rateMove (Board t) color x y = 
-	if checkFive (Board t) x y color 0 then 5
-	else if checkFive (Board t) x y (changePlayer color) 0 then -5
-	else if checkFive (Board t) x y color 1 then 4
-	else if checkFive (Board t) x y color 2 then 3
-	else if checkFive (Board t) x y color 3 then 2
-	else if checkFive (Board t) x y color 4 then 1
-	else length (getNeighbour (getNeighbourList (Board t) color x y))
--}
+
 buildGameTree :: Int -> Board -> Color -> Tree
 buildGameTree 0 (Board l) field = Leaf ((Board l), 0)
 buildGameTree height (Board l) field = Branch ((Board l), height) [buildGameTree (height-1) (insertBoard (Board l) (changePlayer field) x y ) (changePlayer field) | (x,y) <- getEmptyFieldsOfBoard (Board l)]
 
-firstRewriteTree [] = []
-firstRewriteTree (Leaf (Board l, h):t) = (Leaf (Board l, (rateBoard (Board l))):(firstRewriteTree t))
-firstRewriteTree ((Branch (Board l, h) []):t) = ((Branch (Board l, (rateBoard (Board l))) []):(firstRewriteTree t))
-firstRewriteTree ((Branch(Board l,h) list) : t) = ((Branch(Board l,h) (firstRewriteTree list)) : (firstRewriteTree t)) 
+firstRewriteTree [] _ = []
+firstRewriteTree (Leaf (Board l, h):t) color = (Leaf (Board l, (rateBoard (Board l) color)):(firstRewriteTree t color))
+firstRewriteTree ((Branch (Board l, h) []):t) color = ((Branch (Board l, (rateBoard (Board l) color)) []):(firstRewriteTree t color))
+firstRewriteTree ((Branch(Board l,h) list) : t) color = ((Branch(Board l,h) (firstRewriteTree list color)) : (firstRewriteTree t color)) 
 
 
 secondRewriteTree [] = []
@@ -97,7 +79,7 @@ secondRewriteTree (Leaf (Board l, h):t) = Leaf (Board l, h):(secondRewriteTree t
 secondRewriteTree ((Branch (Board l, h) []):t) = ((Branch (Board l, h) []):(secondRewriteTree t))
 secondRewriteTree ((Branch(Board l,h) list) : t) = ((Branch(Board l,(sumFromTree list)) (secondRewriteTree list)) : (secondRewriteTree t))
 
-ratedTree height currentBoard currentColor = secondRewriteTree $ firstRewriteTree [(buildGameTree height currentBoard currentColor)]
+ratedTree height currentBoard currentColor = secondRewriteTree $ firstRewriteTree [(buildGameTree height currentBoard currentColor)] currentColor
 
 getSubNodes [(Branch(Board l,h) list)] = list
 
@@ -138,35 +120,7 @@ sumFromTree [] = 0
 sumFromTree (Leaf (_, h):t) = h + sumFromTree t
 sumFromTree ((Branch (_, h) []) : t) = h + sumFromTree t
 sumFromTree ((Branch(_,h) list) : t) = sumFromTree list + sumFromTree t
-{-
-getBoardFromTree :: Tree -> Board
-getBoardFromTree (Leaf ((Board l), _)) = (Board l)
-getBoardFromTree (Branch ((Board l), _) _ ) = (Board l)
 
-getNeighbour :: (Eq t, Eq t1, Num t, Num t1) => [(t, t1)] -> [(t, t1)]
-getNeighbour [] = []
-getNeighbour ((x,y):xs) = 
-	if x == 0 && y == 0 then getNeighbour xs
-	else [(x,y)] ++ getNeighbour xs
-	
-getNeighbourList :: Board -> Color -> Int -> Int -> [(Int, Int)]
-getNeighbourList (Board l) color col row = 
-	[getOneNeighbour (Board l) color (row + 1) (col)] ++ 
-	[getOneNeighbour (Board l) color (row - 1) (col)] ++ 
-	[getOneNeighbour (Board l) color (row + 1) (col + 1)] ++ 
-	[getOneNeighbour (Board l) color (row + 1) (col - 1)] ++ 
-	[getOneNeighbour (Board l) color (row - 1) (col - 1)] ++ 
-	[getOneNeighbour (Board l) color (row - 1) (col + 1)] ++ 
-	[getOneNeighbour (Board l) color (row) (col + 1)] ++ 
-	[getOneNeighbour (Board l) color (row) (col - 1)]
-	
-getOneNeighbour :: Board -> Color -> Int -> Int -> (Int, Int)
-getOneNeighbour (Board l) color row col =   
-	if (row < 16) && (row > 0) && (col < 16) && (col > 0) then 
-		if getElement (Board l) row col == color then (col,row)
-		else (0, 0)
-	else (0, 0)
--}
 changePlayer color =
 	case color of 
 	Empty -> Empty
@@ -227,8 +181,29 @@ searchFiveInLine (x:xs) color counter tmp
 	| x == color = searchFiveInLine xs color (counter+1) tmp
 	| otherwise = searchFiveInLine xs color counter (tmp + 1)
 
-rateBoard :: Board -> Int
-rateBoard _  = 20
+rateBoard :: Board -> Color -> Int
+rateBoard (Board x) color = goRateThisShit (Board x) color (getSize (Board x)) (getSize (Board x))
+
+intSquareRoot :: Int -> Int
+intSquareRoot n = try n where
+  try i   | i*i > n   = try (i - 1) 
+          | i*i <= n  = i
+
+getSize :: Board -> Int
+getSize (Board []) = 0
+getSize (Board x) = intSquareRoot (getSizeAll (Board x))
+
+getSizeAll (Board []) = 0
+getSizeAll (Board ((Field field x y):t)) = 1 + getSizeAll (Board t)
+
+goRateThisShit (Board []) _ _ _ = 0
+goRateThisShit (Board x) color col row = 
+	if (col <= getSize (Board x)) && (row <= getSize (Board x)) && col > 0 && row > 0 then
+		if (checkFive (Board x) row col color 0) then 1
+		else if (checkFive (Board x) row col (changePlayer color) 0) then -1
+		else goRateThisShit (Board x) color (row - 1) (col - 1)
+	else 0
+	
 
 data Player = Human Color
             | AI    Color
