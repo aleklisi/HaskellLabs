@@ -183,7 +183,7 @@ searchFiveInLine (x:xs) color counter tmp
 
 rateBoard :: Board -> Color -> Int
 rateBoard (Board x) color = goRateThisShit (Board x) color (getSize (Board x)) (getSize (Board x))
-
+{-
 intSquareRoot :: Int -> Int
 intSquareRoot n = try n where
   try i   | i*i > n   = try (i - 1) 
@@ -195,6 +195,12 @@ getSize (Board x) = intSquareRoot (getSizeAll (Board x))
 
 getSizeAll (Board []) = 0
 getSizeAll (Board ((Field field x y):t)) = 1 + getSizeAll (Board t)
+-}
+
+getBListSize (Board []) = error "worng list structure";
+getBListSize (Board ((Field _ x1 _):(Field col x2 y):t)) = if x1 < x2
+            then 1  + (getBListSize (Board ((Field col x2 y):t)))
+            else 1
 
 goRateThisShit (Board []) _ _ _ = 0
 goRateThisShit (Board x) color col row = 
