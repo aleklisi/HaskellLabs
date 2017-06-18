@@ -14,13 +14,11 @@ opositFiled White = Black
 --inicjalizacja pustej planszy size x size
 emptyBoard size = Board [(x,y,Empty) | y <- [1..size], x <- [1..size]]
 
---typ danych dla ca³ej planszy 
+--typ danych dla ca3ej planszy 
 data Board = Board [(Int,Int,Field)]
 
-printBoard (Board l) = printList l
-
-instance Show Board where
-      show (Board l) = printBoard (Board l)
+--instance Show Board where
+--      show (Board l) = printBoard (Board l)
 
 stringToTestBoard = "OX_\nOX_\n___"        
        
@@ -53,7 +51,7 @@ insertList x y value (h:t) = if h == (x,y,Empty)
       then (x,y,value):t
       else [h] ++ (insertList x y value t)
 
---lista pozycji Fieldów Empty na planszy
+--lista pozycji FieldÃ³w Empty na planszy
 listOfEmptyFieldsOfBoard (Board l) = listOfEmptyFieldsOfList l
 
 listOfEmptyFieldsOfList [] = []
@@ -63,7 +61,7 @@ listOfEmptyFieldsOfList ((x,y,val):t) = if val == Empty
       
 possobleNextBoards (Board l) value = [insertBoard x y value (Board l) | (x,y) <- listOfEmptyFieldsOfList l] 
       
-data Tree = Leaf Board Int | Brunch Board Int [Tree] deriving (Show)
+data Tree = Leaf Board Int | Brunch Board Int [Tree] --deriving (Show)
 
 getBoardFromTree (Leaf b _) = b
 getBoardFromTree (Brunch b _ _) = b
@@ -202,10 +200,11 @@ instance Ord Tree where
     
 problem = treeLevel ( markBruches ( markLeafs [buildGameTree 2 testBoard White]))
 
-getNextBoardWithBestMove (Board l) treeDepth color = fst ( treeLevel ( markBruches ( markLeafs [buildGameTree treeDepth (Board l) color])))
+getNextBoardWithBestMove (Board l) treeDepth color = fst ( treeLevel ( markBruches ( markLeafs [buildGameTree treeDepth (Board l) color])) color)
 
-treeLevel ((Brunch (Board l) val li):t) = (getBoardFromTree (maximum li), val)
-
+treeLevel ((Brunch (Board l) val li):t) color = if color == White
+	then (getBoardFromTree (maximum li), val)
+	else (getBoardFromTree (minimum li), val)
 getMarkAndBoard ((Leaf (Board l) val):t) = [((Board l),val)] ++ (getMarkAndBoard t)
 getMarkAndBoard ((Brunch (Board l) val _):t) = [((Board l),val)] ++ (getMarkAndBoard t)
 getMarkAndBoard [] = []
@@ -224,85 +223,66 @@ ifWinner (Board l) color = if findmyHope (myHope 15 color) (getAllLinesOfBoard (
         else False
 
         
-{--        
+printBoard (Board l) = putStrLn $ printList l 
 startGameWithPlayer = pvp (emptyBoard 19) Black
 
-
 pvp (Board l) color =
-    
         do
-        show (Board l)        
-        putStr "Write x:"
-        line <- getLine
-        let x :: Int
-                x = read line
-        putStrLn "Write y:"
-        line <- getLine
-        let y :: Int
-                y = read line
+        printBoard (Board l)        
+        c <- readMyInt 
+        let x = read c :: Int
+        r <- readMyInt 
+        let y = read r :: Int
         if canInsertToBoard (Board l) x y 
                 then do
                         let newBoard = (insertBoard x y color (Board l))
                         if ifWinner newBoard color
-                                then return (color + "wins the game")
+                                then putStrLn (show color ++ " wins the game")
                                 else pvp newBoard (opositFiled color)
                 else do
                         putStr "worng move play again"
                         pvp (Board l) color
--}
 
+readMyInt :: IO String
+readMyInt = do
+  c <- getLine
+  if isNumber c
+    then return c
+    else do 
+      putStrLn "Please enter a valid position."
+      readMyInt
 
+isNumber :: String -> Bool
+isNumber str =
+    case (reads str) :: [(Double, String)] of
+      [(_, "")] -> True
+      _         -> False
 
-startGameWithComputerPlayingWhite = pvp (emptyBoard 19) Black White
-startGameWithComputerPlayingBlack = pvp (emptyBoard 19) Black Black
+startGameWithComputerPlayingWhite = pvc (emptyBoard 19) Black White
+startGameWithComputerPlayingBlack = pvc (emptyBoard 19) Black Black
 
-pvc (Board l) currentColor computerColor = 
-        do
-        putStrLn $ show $ Board l 
-        if currentColor == computerColor 
-            then 
-			    do
-                    let newBoard = getNextBoardWithBestMove 2 (Board l) currentColor
+pvc (Board l) currentColor computerColor = do
+    printBoard (Board l)
+    if currentColor == computerColor 
+        then do
+            let newBoard = getNextBoardWithBestMove (Board l) 2 $ opositFiled currentColor
+            if (ifWinner newBoard currentColor)
+                then do putStrLn (show currentColor ++ "wins the game")
+                else do pvc newBoard (opositFiled currentColor) computerColor 
+        else do
+            c <- readMyInt 
+            let x = read c :: Int
+            r <- readMyInt 
+            let y = read r :: Int
+            if canInsertToBoard (Board l) x y 
+                then do
+                    let newBoard = (insertBoard x y currentColor (Board l))
                     if ifWinner newBoard currentColor
-                        then putStrLn $ show currentColor + "wins the game"
-                        else pvc newBoard (opositFiled currentColor) computerColor 
-            else
-                do 
-                    putStr "Write x:"
-                    line <- getLine
-                    let x :: Int
-                        x = read line
-                    putStrLn "Write y:"
-                    line <- getLine
-                    let y :: Int
-                        y = read line
-                    if canInsertToBoard (Board l) x y 
-                        then 
-                            do
-                                let newBoard = insertBoard x y currentColor (Board l)
-                                    if ifWinner newBoard currentColor
-                                        then putStrLn $ show currentColor + "wins the game"
-                                        else pvc newBoard (opositFiled currentColor) computerColor
-                        else 
-                            do
-                                putStr "worng move play again"
-                                pvp (Board l) currentColor computerColor
-                
-
---}
-
---getBoardFromBrunch (Brunch (Board l) _ _) = Board l
---getBoardFromBrunch (Leaf (Board l) _) = Board l
-
---getListOfSubBrunches (Brunch _ _ li) = li
-    
---getBestBrunch [] = error "cant find best brunch"
---getBestBrunch list = getBoardFromBrunch (maximum ( getListOfSubBrunches (head list)))
-
---getNextBestMove (Board l) color = do
---        tree1 <- buildGameTree 1 (Board l) color
---        tree2 <- markLeafs tree1
---        tree3 <- markBruches tree2 
+                        then do putStrLn ( show currentColor ++ "wins the game")
+                        else do pvc newBoard (opositFiled currentColor) computerColor
+                else do
+                    putStrLn "worng move play again"
+                    pvc (Board l) currentColor computerColor
 
 areEqualForLists [] [] = True
 areEqualForLists [] _ = False
