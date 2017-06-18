@@ -229,10 +229,10 @@ startGameWithPlayer = pvp (emptyBoard 19) Black
 
 
 pvp (Board l) color =
-	
+    
         do
-        show (Board l)		
-		putStr "Write x:"
+        show (Board l)        
+        putStr "Write x:"
         line <- getLine
         let x :: Int
                 x = read line
@@ -251,41 +251,45 @@ pvp (Board l) color =
                         pvp (Board l) color
 -}
 
-{-
+
 
 startGameWithComputerPlayingWhite = pvp (emptyBoard 19) Black White
 startGameWithComputerPlayingBlack = pvp (emptyBoard 19) Black Black
 
 pvc (Board l) currentColor computerColor = 
-		do
-		show (Board l)
+        do
+        putStrLn $ show $ Board l 
         if currentColor == computerColor 
-        then do
-                let newBoard = (getNextBoardWithBestMove 2 (Board l) currentColor)
-                if ifWinner newBoard currentColor
-                        then return (currentColor + "wins the game")
+            then 
+			    do
+                    let newBoard = getNextBoardWithBestMove 2 (Board l) currentColor
+                    if ifWinner newBoard currentColor
+                        then putStrLn $ show currentColor + "wins the game"
                         else pvc newBoard (opositFiled currentColor) computerColor 
-        else
-                do putStr "Write x:"
-                        line <- getLine
-                        let x :: Int
-                                x = read line
-                        putStrLn "Write y:"
-                        line <- getLine
-                        let y :: Int
-                                y = read line
-                        if canInsertToBoard (Board l) x y 
-                                then do
-                                        let newBoard = (insertBoard x y color (Board l))
-                                        if ifWinner newBoard color
-                                                then return (color + "wins the game")
-                                                else pvc newBoard (opositFiled color) computerColor
-                                else do
-                                        putStr "worng move play again"
-                                        pvp (Board l) color computerColor
+            else
+                do 
+                    putStr "Write x:"
+                    line <- getLine
+                    let x :: Int
+                        x = read line
+                    putStrLn "Write y:"
+                    line <- getLine
+                    let y :: Int
+                        y = read line
+                    if canInsertToBoard (Board l) x y 
+                        then 
+                            do
+                                let newBoard = insertBoard x y currentColor (Board l)
+                                    if ifWinner newBoard currentColor
+                                        then putStrLn $ show currentColor + "wins the game"
+                                        else pvc newBoard (opositFiled currentColor) computerColor
+                        else 
+                            do
+                                putStr "worng move play again"
+                                pvp (Board l) currentColor computerColor
                 
 
--}
+--}
 
 --getBoardFromBrunch (Brunch (Board l) _ _) = Board l
 --getBoardFromBrunch (Leaf (Board l) _) = Board l

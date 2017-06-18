@@ -1,6 +1,3 @@
---module Five where
---import System.Random
-
 -- Eq == Equality (== or !=)
 data Color = Empty | Black | White deriving (Eq)
 
@@ -13,11 +10,8 @@ data Field = Field{field::Color, x::Int, y:: Int} deriving (Eq)
 
 data Board = Board [Field]
 
---instance Show Board where
---	show (Board myBoard) = showBoard (Board myBoard)
-
---instance Read Board where
---	readsPrec _ Board = Board (stringToList move 0 0)
+instance Show Board where
+	show (Board myBoard) = showBoard2 (Board myBoard)
 
 --charToColor :: [Char] -> Color
 --charToColor "_" = Empty
@@ -70,94 +64,68 @@ getEmptyFieldsOfBoard (Board ((Field field x y):t)) =
 	if field == Empty then [(x,y)] ++ getEmptyFieldsOfBoard (Board t)
 	else getEmptyFieldsOfBoard (Board t)
 
-generateFirstMove (Board l) color 16 16 = (0, 0)
-generateFirstMove (Board l) color row col = if getElement (Board l) row col == Empty then (col, row)
-                                            else generateFirstMove (Board l) color (row+1) (col+1)
-
-rateMove (Board []) color _ _ = 0
-rateMove (Board t) color x y = 
-	if checkFive (Board t) x y color 0 then 5
-	else if checkFive (Board t) x y (changePlayer color) 0 then -5
-	else if checkFive (Board t) x y color 1 then 4
-	else if checkFive (Board t) x y color 2 then 3
-	else if checkFive (Board t) x y color 3 then 2
-	else if checkFive (Board t) x y color 4 then 1
-	else length (getNeighbour (getNeighbourList (Board t) color x y))
-
-
---buildGameTree2 :: Int -> Int -> Board -> Color -> Tree
---buildGameTree2 0 priority (Board l) field = Leaf ((Board l), (priority))
---buildGameTree2 counter priority (Board l) field = Branch ((Board l), (priority)) [buildGameTree2 (counter - 1) (rateMove (Board l) field x y) (insertBoard (Board l) (changePlayer field) x y ) (changePlayer field) | (x,y) <- getNeighbour (getNeighbpourList (Board l) field x2 y2) | (x2 y2) <- getEmptyFieldsOfBoard (Board l)]
-
 buildGameTree :: Int -> Board -> Color -> Tree
 buildGameTree 0 (Board l) field = Leaf ((Board l), 0)
 buildGameTree height (Board l) field = Branch ((Board l), height) [buildGameTree (height-1) (insertBoard (Board l) (changePlayer field) x y ) (changePlayer field) | (x,y) <- getEmptyFieldsOfBoard (Board l)]
 
+firstRewriteTree [] _ = []
+firstRewriteTree (Leaf (Board l, h):t) color = (Leaf (Board l, (rateBoard (Board l) color)):(firstRewriteTree t color))
+firstRewriteTree ((Branch (Board l, h) []):t) color = ((Branch (Board l, (rateBoard (Board l) color)) []):(firstRewriteTree t color))
+firstRewriteTree ((Branch(Board l,h) list) : t) color = ((Branch(Board l,h) (firstRewriteTree list color)) : (firstRewriteTree t color)) 
 
---rateBoard (Board l) field x y 0
-rateTree [] _ = []
-rateTree (Leaf (Board l, h):t) color = [Leaf (Board l, (rateBoard (Board l) color 0 0 0))] ++  rateTree t color
-rateTree ((Branch (Board l, h) []):t) color =  [Branch (Board l, (rateBoard (Board l) color 0 0 0)) [] ] ++ rateTree t color
-rateTree ((Branch(Board l,h) list) : t) color = [Branch((Board l), (rateBoard (Board l) color 0 0 0)) (rateTree list color)] ++ rateTree t color
---}
 
+secondRewriteTree [] = []
+secondRewriteTree (Leaf (Board l, h):t) = Leaf (Board l, h):(secondRewriteTree t)
+secondRewriteTree ((Branch (Board l, h) []):t) = ((Branch (Board l, h) []):(secondRewriteTree t))
+secondRewriteTree ((Branch(Board l,h) list) : t) = ((Branch(Board l,(sumFromTree list)) (secondRewriteTree list)) : (secondRewriteTree t))
+
+ratedTree height currentBoard currentColor = secondRewriteTree $ firstRewriteTree [(buildGameTree height currentBoard currentColor)] currentColor
+
+getSubNodes [(Branch(Board l,h) list)] = list
+
+getBestSubTree [] = error "list cant be empty - no more possoble moves"
+getBestSubTree list = maximum list
+
+getBoardFromBestNodeWithItsMark (Branch (a,b) _) = (a,b)
+getBoardFromBestNodeWithItsMark _ = error "cant find best board"
+
+getBoardFromBestNode (Branch (a,_) _) = a
+
+getBestRatedBoard height currentBoard currentColor = getBoardFromBestNode $ getBestSubTree $ getSubNodes $ ratedTree height currentBoard currentColor
+
+instance Eq (Tree) where
+	(Leaf (_,x)) == (Leaf (_,y)) = x == y
+	Branch(_,x) _ == Branch(_,y) _ = x == y
+	Branch(_,y) _ == Leaf(_,x) = x == y
+	Leaf(_,x) == Branch(_,y) _ = x == y
+	
+instance Ord (Tree) where
+	(Leaf (_,x)) `compare` (Leaf (_,y)) = x `compare` y
+	Branch(_,x) _ `compare` Branch(_,y) _ = x `compare` y
+	Branch(_,y) _ `compare` Leaf(_,x) = x `compare` y
+	Leaf(_,x) `compare` Branch(_,y) _ = x `compare` y	
+
+getDifretFieldBoards (Board a) (Board b) = getDifretFieldLists a b
+
+getDifretFieldLists [] _ = error ""
+getDifretFieldLists _ [] = error ""
+
+getDifretFieldLists ((Field c1 x1 y1):t1) ((Field c2 x2 y2):t2) = if c1 == c2 
+	then getDifretFieldLists t1 t2
+	else (x1,y1)
+
+getNextMoveFromNextBestBoard height currentBoard currentColor = getDifretFieldBoards (getBestRatedBoard height currentBoard currentColor) currentBoard
+	
 sumFromTree [] = 0
 sumFromTree (Leaf (_, h):t) = h + sumFromTree t
 sumFromTree ((Branch (_, h) []) : t) = h + sumFromTree t
-sumFromTree ((Branch(_,h) list) : t) = h + sumFromTree t + sumFromTree list
-
---getMax [] = 0
---getMax (Leaf (_, h):t) = sumFromTree (Leaf (_, h):t)
---getMax ((Branch (_, h) []) : t) = getMax sumFromTree ((Branch (_, h) []) : t)
---getMax ((Branch(_,h) list) : t) = max sumFromTree 
-
-getBoardFromTree :: Tree -> Board
-getBoardFromTree (Leaf ((Board l), _)) = (Board l)
-getBoardFromTree (Branch ((Board l), _) _ ) = (Board l)
-
-getNeighbour :: (Eq t, Eq t1, Num t, Num t1) => [(t, t1)] -> [(t, t1)]
-getNeighbour [] = []
-getNeighbour ((x,y):xs) = 
-	if x == 0 && y == 0 then getNeighbour xs
-	else [(x,y)] ++ getNeighbour xs
-	
-getNeighbourList :: Board -> Color -> Int -> Int -> [(Int, Int)]
-getNeighbourList (Board l) color col row = 
-	[getOneNeighbour (Board l) color (row + 1) (col)] ++ 
-	[getOneNeighbour (Board l) color (row - 1) (col)] ++ 
-	[getOneNeighbour (Board l) color (row + 1) (col + 1)] ++ 
-	[getOneNeighbour (Board l) color (row + 1) (col - 1)] ++ 
-	[getOneNeighbour (Board l) color (row - 1) (col - 1)] ++ 
-	[getOneNeighbour (Board l) color (row - 1) (col + 1)] ++ 
-	[getOneNeighbour (Board l) color (row) (col + 1)] ++ 
-	[getOneNeighbour (Board l) color (row) (col - 1)]
-	
-getOneNeighbour :: Board -> Color -> Int -> Int -> (Int, Int)
-getOneNeighbour (Board l) color row col =   
-	if (row < 16) && (row > 0) && (col < 16) && (col > 0) then 
-		if getElement (Board l) row col == color then (col,row)
-		else (0, 0)
-	else (0, 0)
+sumFromTree ((Branch(_,h) list) : t) = sumFromTree list + sumFromTree t
 
 changePlayer color =
 	case color of 
 	Empty -> Empty
 	White -> Black
 	Black -> White
-
-{--
-getMoveComputer :: Board -> Int -> Color -> [(Int,Int)]
-getMoveComputer (Board l) 5 color _ = generateFirstMove (Board l) color 6 6
-getMoveComputer (Board l) counter color (x,y) = 
-    if checkFive (Board l) x y color counter then (x,y)
-    else getMoveComputer (Board l) (counter+1) color (x,y)
-getMoveComputer (Board l) counter color ((x,y):xs) = 
-    if checkFive (Board l) x y color counter then (x,y)
-    else getMoveComputer (Board l) (counter) color xs
---buildStrategy 0 (Board l) field = Leaf ((Board l), 0, 0)
---}
---buildStrategy height (Board l) field =  Branch ((Board l), 0, height) [buildStrategy (height - 1) (insertBoard (Board l) (changePlayer field) x y) (changePlayer field) | (x,y,0) <- getBestChose (Board l) field]
---}
 
 getElement :: Board -> Int -> Int -> Color
 getElement (Board []) _ _ = error "Empty board or index out of range"
@@ -213,12 +181,38 @@ searchFiveInLine (x:xs) color counter tmp
 	| x == color = searchFiveInLine xs color (counter+1) tmp
 	| otherwise = searchFiveInLine xs color counter (tmp + 1)
 
-rateBoard :: Board -> Color -> Int -> Int -> Int -> Int
-rateBoard (Board m) color 16 16 _ = 0
-rateBoard (Board m) color col row counter 
-	| checkFive (Board m) col row color counter = 5 - counter
-        | checkFive (Board m) col row (changePlayer color) counter = -5 + counter
-	| otherwise = rateBoard (Board m) color col row (counter + 1)
+checkOutWin (Board x) color col = 
+	if col <= 0 || col > getSize (Board x) then False
+	else if checkFive (Board x) col col color 0 then True
+	else checkOutWin (Board x) color (col + 1) 
+	
+rateBoard :: Board -> Color -> Int
+rateBoard (Board x) color = goRateThisShit (Board x) color (getSize (Board x)) (getSize (Board x))
+{-
+intSquareRoot :: Int -> Int
+intSquareRoot n = try n where
+  try i   | i*i > n   = try (i - 1) 
+          | i*i <= n  = i
+getSize :: Board -> Int
+getSize (Board []) = 0
+getSize (Board x) = intSquareRoot (getSizeAll (Board x))
+getSizeAll (Board []) = 0
+getSizeAll (Board ((Field field x y):t)) = 1 + getSizeAll (Board t)
+-}
+
+getSize (Board []) = error "worng list structure";
+getSize (Board ((Field _ x1 _):(Field col x2 y):t)) = if x1 < x2
+            then 1  + (getSize (Board ((Field col x2 y):t)))
+            else 1
+
+goRateThisShit (Board []) _ _ _ = 0
+goRateThisShit (Board x) color col row = 
+	if (col <= getSize (Board x)) && (row <= getSize (Board x)) && col > 0 && row > 0 then
+		if (checkFive (Board x) row col color 0) then 1
+		else if (checkFive (Board x) row col (changePlayer color) 0) then -1
+		else goRateThisShit (Board x) color (row - 1) (col - 1)
+	else 0
+	
 
 data Player = Human Color
             | AI    Color
@@ -315,7 +309,7 @@ loopfunc (Board x) col row player m =
     do
       if isGood (Board x) col row
       then do
-        if checkFive (insertBoard (Board x) (cellColor player) col row) row col (cellColor player) 0
+        if checkOutWin (insertBoard (Board x) (cellColor player) col row) (cellColor player) 1
          then do
           showBoard (insertBoard (Board x) (cellColor player) col row)
           putStrLn "You Win!!!"
@@ -330,7 +324,7 @@ gameLoop :: Board -> Player -> Mode -> IO ()
 gameLoop (Board x) (AI o) m = 
   do showBoard (Board x)
      currentPlayer (AI o)
-     let (col,row) = head (getEmptyFieldsOfBoard (Board x))
+     let (col,row) = getNextMoveFromNextBestBoard 2 (Board x) o
      putStr "Col: "
      print col
      putStr "Row: "
