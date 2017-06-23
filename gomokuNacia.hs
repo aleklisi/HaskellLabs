@@ -135,13 +135,13 @@ getElement (Board ((Field field x y):t)) row col = if (x == row && y == col)
 
 getCol :: Board -> Int -> [Color]
 getCol (Board []) _ = []
-getCol (Board ((Field field x y):t)) col = if x == col && y < 16
+getCol (Board ((Field field x y):t)) col = if x == col && y < 20
 	then [field] ++ getCol (Board t) col 
 	else getCol (Board t) col 
 
 getRow :: Board -> Int -> [Color]	
 getRow (Board []) _ = []
-getRow (Board ((Field field x y):t)) row = if y == row && x < 16
+getRow (Board ((Field field x y):t)) row = if y == row && x < 20
 	then [field] ++ getRow (Board t) row 
 	else getRow (Board t) row 
 
@@ -151,15 +151,15 @@ getSlant (Board ((Field field x y):t)) col = if x == col && y == x
 	then [field] ++ getSlant (Board t) (col+1)
 	else getSlant (Board t) (col)
  
-testBoard = insertBoard(insertBoard(insertBoard(insertBoard (insertBoard (initializeBoard 15) Black 1 1) Black 2 1)Black 3 1) Black 4 1) Black 5 1
+testBoard = insertBoard(insertBoard(insertBoard(insertBoard (insertBoard (initializeBoard 19) Black 1 1) Black 2 1)Black 3 1) Black 4 1) Black 5 1
 
-testBoard2 = insertBoard(insertBoard(insertBoard(insertBoard (insertBoard (initializeBoard 15) Black 1 1) Black 1 2)Black 1 3) Black 1 4) Black 1 5
+testBoard2 = insertBoard(insertBoard(insertBoard(insertBoard (insertBoard (initializeBoard 19) Black 1 1) Black 1 2)Black 1 3) Black 1 4) Black 1 5
 
-testBoard3 = insertBoard(insertBoard(insertBoard(insertBoard (insertBoard (initializeBoard 15) Black 1 1) Black 2 2)Black 3 3) Black 4 4) Black 5 5
+testBoard3 = insertBoard(insertBoard(insertBoard(insertBoard (insertBoard (initializeBoard 19) Black 1 1) Black 2 2)Black 3 3) Black 4 4) Black 5 5
 
-testBoard4 = insertBoard(insertBoard(insertBoard (insertBoard (initializeBoard 15) Black 1 1) Black 2 1)Black 3 1) Black 5 1
+testBoard4 = insertBoard(insertBoard(insertBoard (insertBoard (initializeBoard 19) Black 1 1) Black 2 1)Black 3 1) Black 5 1
 
-testBoard5 = insertBoard(insertBoard(insertBoard(insertBoard (insertBoard (initializeBoard 15) Black 15  1) Black 15 2)Black 15 15) Black 15 14) Black 15 10
+testBoard5 = insertBoard(insertBoard(insertBoard(insertBoard (insertBoard (initializeBoard 19) Black 15  1) Black 15 2)Black 15 15) Black 15 14) Black 15 10
 
 testBoard6 = insertBoard (insertBoard (insertBoard (initializeBoard 15) Black 2 2) Black 3 3) Black 5 5
 testBoard7 = insertBoard (insertBoard (insertBoard (initializeBoard 15) Black 2 2) Black 2 3) Black 2 5
@@ -187,7 +187,7 @@ checkOutWin (Board x) color col =
 	else checkOutWin (Board x) color (col + 1) 
 	
 rateBoard :: Board -> Color -> Int
-rateBoard (Board x) color = goRateThisShit (Board x) color (getSize (Board x)) (getSize (Board x))
+rateBoard (Board x) color = minMax (Board x) color (getSize (Board x)) (getSize (Board x))
 {-
 intSquareRoot :: Int -> Int
 intSquareRoot n = try n where
@@ -205,12 +205,12 @@ getSize (Board ((Field _ x1 _):(Field col x2 y):t)) = if x1 < x2
             then 1  + (getSize (Board ((Field col x2 y):t)))
             else 1
 
-goRateThisShit (Board []) _ _ _ = 0
-goRateThisShit (Board x) color col row = 
+minMax (Board []) _ _ _ = 0
+minMax (Board x) color col row = 
 	if (col <= getSize (Board x)) && (row <= getSize (Board x)) && col > 0 && row > 0 then
 		if (checkFive (Board x) row col color 0) then 1
 		else if (checkFive (Board x) row col (changePlayer color) 0) then -1
-		else goRateThisShit (Board x) color (row - 1) (col - 1)
+		else minMax (Board x) color (row - 1) (col - 1)
 	else 0
 	
 
@@ -344,9 +344,9 @@ gameLoop (Board x) (Human o) m =
 -- Set the game mode according to the input
 whichMode :: String -> IO ()
 whichMode s
-    | s == "1"  = gameLoop (initializeBoard 15) (AI Black)    Single
-    | s == "2"  = gameLoop (initializeBoard 15) (Human Black) Single
-    | s == "3"  = gameLoop (initializeBoard 15) (Human Black) Duo
+    | s == "1"  = gameLoop (initializeBoard 19) (AI Black)    Single
+    | s == "2"  = gameLoop (initializeBoard 19) (Human Black) Single
+    | s == "3"  = gameLoop (initializeBoard 19) (Human Black) Duo
     | otherwise = main
 
 -- Game begins here
